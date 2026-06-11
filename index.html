@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mabu-DM</title>
+  <style>
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --surface-2: #242424;
+      --border: rgba(255,255,255,0.1);
+      --text: #f0f0f0;
+      --text-muted: #888;
+      --accent: #4f8ef7;
+      --accent-hover: #6ba3ff;
+      --input-bg: #222;
+      --input-border: rgba(255,255,255,0.15);
+      --skip-bg: #1f1f1f;
+      --skip-hover: #2e2e2e;
+      --radius-sm: 8px;
+      --radius-lg: 16px;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f0f2f5;
+        --surface: #ffffff;
+        --surface-2: #f5f5f5;
+        --border: rgba(0,0,0,0.08);
+        --text: #111;
+        --text-muted: #777;
+        --accent: #2563eb;
+        --accent-hover: #1d4ed8;
+        --input-bg: #fff;
+        --input-border: rgba(0,0,0,0.15);
+        --skip-bg: #f5f5f5;
+        --skip-hover: #eaeaea;
+      }
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      width: 100%;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: var(--text);
+    }
+    .logo-icon {
+      width: 28px; height: 28px;
+      background: var(--accent);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-icon svg { width: 14px; height: 14px; fill: white; }
+    .logo-name { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+    .main {
+      width: 100%;
+      max-width: 1000px;
+      padding: 24px 16px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .url-row { display: flex; gap: 8px; }
+    .url-input {
+      flex: 1;
+      height: 44px;
+      padding: 0 14px;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .url-input::placeholder { color: var(--text-muted); }
+    .url-input:focus { border-color: var(--accent); }
+    .load-btn {
+      height: 44px;
+      padding: 0 18px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .load-btn:hover { background: var(--accent-hover); }
+    .load-btn:active { transform: scale(0.98); }
+    .player-card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      overflow: visible;
+    }
+    .player-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      overflow: hidden;
+    }
+    .player-wrapper iframe,
+    .player-wrapper video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+    .player-wrapper video { object-fit: contain; background: #000; }
+    .player-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: #111;
+      color: var(--text-muted);
+    }
+    @media (prefers-color-scheme: light) {
+      .player-placeholder { background: #e8e8e8; }
+    }
+    .placeholder-icon {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: var(--surface-2);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .placeholder-icon svg { width: 24px; height: 24px; fill: var(--text-muted); }
+    .placeholder-text { font-size: 14px; text-align: center; max-width: 260px; line-height: 1.5; }
+    .controls {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--border);
+    }
+    select.skip-select {
+      height: 38px;
+      padding: 0 28px 0 10px;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      min-width: 68px;
+    }
+    select.skip-select:focus { border-color: var(--accent); }
+    .skip-btn {
+      height: 38px;
+      min-width: 80px;
+      padding: 0 14px;
+      background: var(--skip-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: background 0.12s;
+      white-space: nowrap;
+    }
+    .skip-btn:hover { background: var(--skip-hover); }
+    .skip-btn:active { transform: scale(0.96); }
+    .skip-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .status-bar {
+      padding: 6px 16px 12px;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .time-display { font-variant-numeric: tabular-nums; }
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .status-dot.live { background: #22c55e; }
+    @media (max-width: 480px) {
+      header { padding: 12px 16px; }
+      .main { padding: 16px 12px 32px; gap: 12px; }
+      .skip-btn { min-width: 70px; font-size: 12px; }
+      .controls { gap: 8px; }
+    }
+    @media (min-width: 640px) { .main { padding: 28px 24px 48px; } }
+    @media (min-width: 1000px) { .main { padding: 32px 24px 56px; } }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="#">
+    <div class="logo-icon">
+      <svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><polygon points="3,2 12,7 3,12"/></svg>
+    </div>
+    <span class="logo-name">Mabu-DM</span>
+  </a>
+</header>
+
+<main class="main">
+  <div class="url-row">
+    <input class="url-input" type="url" id="urlInput"
+      placeholder="Paste a video URL…"
+      autocomplete="off" spellcheck="false" />
+    <button class="load-btn" id="loadBtn">Load</button>
+  </div>
+
+  <div class="player-card">
+    <div class="player-wrapper" id="playerWrapper">
+      <div class="player-placeholder" id="placeholder">
+        <div class="placeholder-icon">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+        <p class="placeholder-text">Paste a URL above and press Load</p>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="skip-btn" id="skipBack" title="Skip backward">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="19,20 9,12 19,4"/><line x1="5" y1="4" x2="5" y2="20"/>
+        </svg>
+        Back
+      </button>
+
+      <select class="skip-select" id="skipAmount">
+        <option value="5">5s</option>
+        <option value="10" selected>10s</option>
+        <option value="15">15s</option>
+        <option value="30">30s</option>
+        <option value="60">1m</option>
+        <option value="300">5m</option>
+      </select>
+
+      <button class="skip-btn" id="skipFwd" title="Skip forward">
+        Forward
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="5,4 15,12 5,20"/><line x1="19" y1="4" x2="19" y2="20"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="status-bar" id="statusBar" style="display:none;">
+      <span class="status-dot" id="statusDot"></span>
+      <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+    </div>
+  </div>
+</main>
+
+<script>
+  const urlInput   = document.getElementById('urlInput');
+  const loadBtn    = document.getElementById('loadBtn');
+  const wrapper    = document.getElementById('playerWrapper');
+  const placeholder= document.getElementById('placeholder');
+  const skipBack   = document.getElementById('skipBack');
+  const skipFwd    = document.getElementById('skipFwd');
+  const skipAmount = document.getElementById('skipAmount');
+  const statusBar  = document.getElementById('statusBar');
+  const statusDot  = document.getElementById('statusDot');
+  const timeDisplay= document.getElementById('timeDisplay');
+
+  let currentTime = 0;
+  let duration    = 0;
+  let platform    = null;
+  let ytReady     = false;
+  let ytPlayer    = null;
+  let pollTimer   = null;
+  let dmReady     = false;
+
+  /* ── helpers ─────────────────────────────────────────── */
+  function fmt(s) {
+    s = Math.max(0, Math.floor(s));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    return `${m}:${String(sec).padStart(2,'0')}`;
+  }
+  function updateStatus() {
+    timeDisplay.textContent = `${fmt(currentTime)} / ${fmt(duration)}`;
+  }
+  function showStatus() {
+    placeholder.style.display = 'none';
+    statusBar.style.display   = 'flex';
+    updateStatus();
+  }
+  function clearPlayer() {
+    ['dmPlayer','ytPlayer','vimeoPlayer','twitchPlayer','videoPlayer'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    });
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    ytPlayer = null; ytReady = false; dmReady = false;
+    window.removeEventListener('message', onMessage);
+    currentTime = 0; duration = 0;
+    statusDot.classList.remove('live');
+    placeholder.style.display = '';
+    statusBar.style.display   = 'none';
+  }
+  function makeIframe(id, src) {
+    const f = document.createElement('iframe');
+    f.id = id;
+    f.src = src;
+    f.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture');
+    f.setAttribute('allowfullscreen', '');
+    wrapper.appendChild(f);
+    return f;
+  }
+
+  /* ── URL detection ────────────────────────────────────── */
+  function detect(raw) {
+    const url = raw.trim();
+    let m;
+    m = url.match(/(?:youtube\.com\/watch\?.*v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if (m) return { platform: 'youtube', id: m[1] };
+    m = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
+    if (m) return { platform: 'youtube', id: m[1] };
+    m = url.match(/dailymotion\.com\/(?:video|embed\/video)\/([a-zA-Z0-9]+)/);
+    if (m) return { platform: 'dailymotion', id: m[1] };
+    m = url.match(/dai\.ly\/([a-zA-Z0-9]+)/);
+    if (m) return { platform: 'dailymotion', id: m[1] };
+    m = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    if (m) return { platform: 'vimeo', id: m[1] };
+    m = url.match(/twitch\.tv\/\w+\/clip\/([a-zA-Z0-9_-]+)/);
+    if (m) return { platform: 'twitch', type: 'clip', id: m[1] };
+    m = url.match(/clips\.twitch\.tv\/([a-zA-Z0-9_-]+)/);
+    if (m) return { platform: 'twitch', type: 'clip', id: m[1] };
+    m = url.match(/twitch\.tv\/videos\/(\d+)/);
+    if (m) return { platform: 'twitch', type: 'video', id: m[1] };
+    m = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)(?:\?|$)/);
+    if (m && !['videos','clips','directory','settings'].includes(m[1]))
+      return { platform: 'twitch', type: 'channel', id: m[1] };
+    if (/\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url) ||
+        /cdn\.discordapp\.com|media\.discordapp\.net/.test(url))
+      return { platform: 'video', src: url };
+    if (/^x[a-zA-Z0-9]{5,7}$/.test(url)) return { platform: 'dailymotion', id: url };
+    return null;
+  }
+
+  /* ── DM postMessage helpers ───────────────────────────── */
+  // DM supports the player.js spec on the legacy embed endpoint
+  function postDM(msg) {
+    const f = document.getElementById('dmPlayer');
+    if (!f) return;
+    try { f.contentWindow.postMessage(JSON.stringify(msg), '*'); } catch(e) {}
+  }
+  function dmSubscribe() {
+    // player.js spec: subscribe to events
+    const base = { context: 'player.js', version: '0.0.11' };
+    ['ready','timeupdate','play','pause','ended','durationchange'].forEach(evt => {
+      postDM({ ...base, method: 'addEventListener', value: evt, listener: evt });
+    });
+    // also fire legacy listening command as fallback
+    postDM({ command: 'listening' });
+  }
+
+  /* ── loaders ──────────────────────────────────────────── */
+  function loadYouTube(videoId) {
+    platform = 'youtube';
+    if (!window.YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+    }
+    const div = document.createElement('div');
+    div.id = 'ytPlayer';
+    wrapper.appendChild(div);
+    function initYT() {
+      ytPlayer = new YT.Player('ytPlayer', {
+        videoId,
+        playerVars: { autoplay: 0, rel: 0 },
+        events: {
+          onReady: () => {
+            ytReady = true;
+            duration = ytPlayer.getDuration() || 0;
+            showStatus();
+            pollTimer = setInterval(() => {
+              if (!ytReady) return;
+              try {
+                currentTime = ytPlayer.getCurrentTime() || 0;
+                duration    = ytPlayer.getDuration()    || 0;
+                const state = ytPlayer.getPlayerState();
+                if (state === YT.PlayerState.PLAYING) statusDot.classList.add('live');
+                else statusDot.classList.remove('live');
+                updateStatus();
+              } catch(e) {}
+            }, 500);
+          }
+        }
+      });
+    }
+    if (window.YT && window.YT.Player) initYT();
+    else window.onYouTubeIframeAPIReady = initYT;
+  }
+
+  function loadDailymotion(videoId) {
+    platform = 'dailymotion';
+    dmReady = false;
+    window.addEventListener('message', onMessage);
+    const f = makeIframe('dmPlayer',
+      `https://www.dailymotion.com/embed/video/${videoId}?api=postMessage&id=dmPlayer&autoplay=0`);
+    // Subscribe once iframe loads
+    f.addEventListener('load', () => {
+      dmSubscribe();
+      // Re-try after a short delay in case the first attempt fired too early
+      setTimeout(dmSubscribe, 800);
+    });
+    showStatus();
+  }
+
+  function loadVimeo(videoId) {
+    platform = 'vimeo';
+    makeIframe('vimeoPlayer',
+      `https://player.vimeo.com/video/${videoId}?api=1&player_id=vimeoPlayer`);
+    window.addEventListener('message', onMessage);
+    showStatus();
+  }
+
+  function loadTwitch(info) {
+    platform = 'twitch';
+    const hostname = location.hostname || 'localhost';
+    let src;
+    if (info.type === 'clip')       src = `https://clips.twitch.tv/embed?clip=${info.id}&parent=${hostname}&autoplay=false`;
+    else if (info.type === 'video') src = `https://player.twitch.tv/?video=${info.id}&parent=${hostname}&autoplay=false`;
+    else                            src = `https://player.twitch.tv/?channel=${info.id}&parent=${hostname}&autoplay=false`;
+    makeIframe('twitchPlayer', src);
+    showStatus();
+  }
+
+  function loadVideoTag(src) {
+    platform = 'video';
+    const v = document.createElement('video');
+    v.id = 'videoPlayer';
+    v.src = src;
+    v.controls = true;
+    v.setAttribute('playsinline', '');
+    wrapper.appendChild(v);
+    v.addEventListener('loadedmetadata', () => { duration = v.duration || 0; showStatus(); });
+    v.addEventListener('timeupdate', () => {
+      currentTime = v.currentTime;
+      duration    = v.duration || 0;
+      updateStatus();
+      statusDot.classList.toggle('live', !v.paused);
+    });
+    v.addEventListener('pause',  () => statusDot.classList.remove('live'));
+    v.addEventListener('ended',  () => statusDot.classList.remove('live'));
+    showStatus();
+  }
+
+  /* ── message handler ─────────────────────────────────── */
+  function postVimeo(cmd) {
+    const f = document.getElementById('vimeoPlayer');
+    if (f) try { f.contentWindow.postMessage(JSON.stringify(cmd), 'https://player.vimeo.com'); } catch(e) {}
+  }
+
+  function onMessage(e) {
+    let data;
+    try { data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch(e) { return; }
+    if (!data) return;
+
+    // ── Dailymotion (player.js spec + legacy fallback) ──
+    const origin = typeof e.origin === 'string' ? e.origin : '';
+    const isDM = origin.includes('dailymotion.com') || data.id === 'dmPlayer' ||
+                 (data.context === 'player.js' && document.getElementById('dmPlayer'));
+
+    if (isDM && platform === 'dailymotion') {
+      const evt = data.event || data.type || '';
+
+      // player.js spec: timeupdate → { seconds, duration }
+      if (evt === 'timeupdate' && data.data) {
+        if (data.data.seconds  != null) currentTime = data.data.seconds;
+        if (data.data.duration != null && data.data.duration > 0) duration = data.data.duration;
+        updateStatus();
+      }
+
+      // player.js spec: ready — re-subscribe and ask for duration
+      if (evt === 'ready') {
+        dmReady = true;
+        dmSubscribe();
+        postDM({ context: 'player.js', version: '0.0.11', method: 'getDuration', listener: 'getDuration' });
+      }
+
+      // player.js spec: getDuration response
+      if (data.event === 'getDuration' && data.value != null) {
+        duration = data.value;
+        updateStatus();
+      }
+
+      // durationchange
+      if (evt === 'durationchange' && data.data) {
+        if (data.data.duration > 0) { duration = data.data.duration; updateStatus(); }
+      }
+
+      // play / pause / ended
+      if (evt === 'play')  statusDot.classList.add('live');
+      if (evt === 'pause' || evt === 'ended') statusDot.classList.remove('live');
+
+      // legacy DM event fallback
+      if (data.time      != null) { currentTime = data.time;     updateStatus(); }
+      if (data.duration  != null && data.duration > 0) { duration = data.duration; updateStatus(); }
+      if (data.event === 'playing') statusDot.classList.add('live');
+      return;
+    }
+
+    // ── Vimeo ──
+    if (origin.includes('vimeo.com')) {
+      if (data.event === 'playProgress' || data.event === 'timeupdate') {
+        if (data.data) {
+          if (data.data.seconds  != null) currentTime = data.data.seconds;
+          if (data.data.duration != null) duration    = data.data.duration;
+          updateStatus();
+        }
+      }
+      if (data.event === 'play')  statusDot.classList.add('live');
+      if (data.event === 'pause' || data.event === 'finish') statusDot.classList.remove('live');
+      if (data.event === 'ready') {
+        postVimeo({ method: 'addEventListener', value: 'playProgress' });
+        postVimeo({ method: 'addEventListener', value: 'play' });
+        postVimeo({ method: 'addEventListener', value: 'pause' });
+        postVimeo({ method: 'addEventListener', value: 'finish' });
+        postVimeo({ method: 'getDuration' });
+      }
+      if (data.method === 'getDuration' && data.value != null) { duration = data.value; updateStatus(); }
+    }
+  }
+
+  /* ── seek / skip ──────────────────────────────────────── */
+  function seek(target) {
+    target = Math.max(0, target);
+    currentTime = target;
+    updateStatus();
+
+    if (platform === 'youtube' && ytReady && ytPlayer) {
+      ytPlayer.seekTo(target, true);
+
+    } else if (platform === 'dailymotion') {
+      // player.js spec seek
+      postDM({ context: 'player.js', version: '0.0.11', method: 'setCurrentTime', value: target });
+      // legacy fallback
+      postDM({ command: 'seek', parameters: [target] });
+
+    } else if (platform === 'vimeo') {
+      postVimeo({ method: 'seekTo', value: target });
+
+    } else if (platform === 'video') {
+      const v = document.getElementById('videoPlayer');
+      if (v) v.currentTime = target;
+    }
+  }
+
+  function skip(dir) {
+    seek(currentTime + dir * parseInt(skipAmount.value, 10));
+  }
+
+  /* ── load ─────────────────────────────────────────────── */
+  function load() {
+    const info = detect(urlInput.value);
+    if (!info) {
+      urlInput.style.borderColor = '#e24b4a';
+      setTimeout(() => urlInput.style.borderColor = '', 1200);
+      return;
+    }
+    clearPlayer();
+    if      (info.platform === 'youtube')     loadYouTube(info.id);
+    else if (info.platform === 'dailymotion') loadDailymotion(info.id);
+    else if (info.platform === 'vimeo')       loadVimeo(info.id);
+    else if (info.platform === 'twitch')      loadTwitch(info);
+    else if (info.platform === 'video')       loadVideoTag(info.src);
+  }
+
+  loadBtn.addEventListener('click', load);
+  urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') load(); });
+  skipBack.addEventListener('click', () => skip(-1));
+  skipFwd.addEventListener('click',  () => skip( 1));
+</script>
+
+</body>
+</html>
